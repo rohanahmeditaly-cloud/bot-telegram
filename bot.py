@@ -5,40 +5,98 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
-# Fuso orario italiano gestito tramite UTC+1 (standard) / UTC+2 (ora legale)
+# Fuso orario italiano
 TZ_ITALIA = timezone(timedelta(hours=1))
 
-# Orario scolastico per giorno della settimana (0 = Lunedì, 1 = Martedì, ..., 6 = Domenica)
-orario_settimanale = {
-    0: (
-        "08:15 - 09:15: ANDREATTA\n"
-        "09:15 - 10:15: ANDREATTA\n"
-        "11:25 - 13:25: PETTENUZZO\n"
-        "13:25 - 14:25: TOSIN"
-    ),
-    1: (
-        "08:15 - 10:15: MUNICELLA\n"
-        "10:15 - 11:15: ANDREATTA\n"
-        "11:25 - 12:25: ZEN\n"
-        "12:25 - 14:25: BAGGIO"
-    ),
-    2: (
-        "08:15 - 10:15: LEVORATO\n"
-        "10:15 - 12:25: TOSIN"
-    ),
-    3: (
-        "08:15 - 10:15: MUNICELLA\n"
-        "10:15 - 12:25: PETTENUZZO"
-    ),
-    4: (
-        "08:15 - 10:15: ZEN\n"
-        "10:15 - 12:25: BAGGIO"
-    ),
-    5: "Nessuna lezione (Fine settimana)",
-    6: "Nessuna lezione (Fine settimana)"
+# Calendario reale estratto dal PDF (Formato: YYYY-MM-DD)
+CALENDARIO_SCOLASTICO = {
+    # --- Settimana dal 28 Settembre al 2 Ottobre ---
+    "2026-09-28": "⏰ 08:15 - 09:15 ➔ ANDREATTA\n⏰ 09:15 - 10:15 ➔ ANDREATTA\n⏰ 11:25 - 13:25 ➔ PETTENUZZO\n⏰ 13:25 - 14:25 ➔ TOSIN",
+    "2026-09-29": "⏰ 08:15 - 10:15 ➔ MUNICELLA\n⏰ 10:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ ZEN\n⏰ 12:25 - 14:25 ➔ BAGGIO",
+    "2026-09-30": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 12:25 ➔ TOSIN\n⏰ 12:25 - 13:25 ➔ ANDREATTA\n⏰ 13:25 - 14:25 ➔ BELLO'",
+    "2026-10-01": "⏰ 08:15 - 14:25 ➔ BALLOTTO",
+    "2026-10-02": "⏰ 08:15 - 09:15 ➔ BASSETTO\n⏰ 09:15 - 10:15 ➔ ZEN\n⏰ 10:15 - 12:25 ➔ PETTENUZZO\n⏰ 12:25 - 13:25 ➔ ZEN",
+
+    # --- Settimana dal 5 al 9 Ottobre ---
+    "2026-10-05": "⏰ 08:15 - 11:15 ➔ TOSIN\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 14:25 ➔ PETTENUZZO",
+    "2026-10-06": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ VIGO\n⏰ 11:25 - 12:25 ➔ BAGGIO\n⏰ 12:25 - 14:25 ➔ LEVORATO",
+    "2026-10-07": "⏰ 08:15 - 09:15 ➔ ZEN\n⏰ 09:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ PETTENUZZO\n⏰ 12:25 - 14:25 ➔ BELLO'",
+    "2026-10-08": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 13:25 ➔ LEVORATO\n⏰ 13:25 - 14:25 ➔ ZEN",
+    "2026-10-09": "⏰ 08:15 - 09:15 ➔ BASSETTO\n⏰ 09:15 - 10:15 ➔ ZEN\n⏰ 10:15 - 12:25 ➔ LEVORATO\n⏰ 12:25 - 13:25 ➔ BAGGIO",
+
+    # --- Settimana dal 12 al 16 Ottobre ---
+    "2026-10-12": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 13:25 ➔ ZEN\n⏰ 13:25 - 14:25 ➔ MARTINAGGIA",
+    "2026-10-13": "⏰ 08:15 - 10:15 ➔ MUNICELLA\n⏰ 10:15 - 12:25 ➔ BAGGIO\n⏰ 12:25 - 14:25 ➔ PETTENUZZO",
+    "2026-10-14": "⏰ 08:15 - 09:15 ➔ ZEN\n⏰ 09:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ BASSETTO\n⏰ 11:25 - 13:25 ➔ BELLO\n⏰ 13:25 - 14:25 ➔ ZEN",
+    "2026-10-15": "⏰ 08:15 - 14:25 ➔ BALLOTTO",
+    "2026-10-16": "⏰ 08:15 - 09:15 ➔ BASSETTO\n⏰ 09:15 - 10:15 ➔ ANDREATTA\n⏰ 10:15 - 11:15 ➔ LEVORATO\n⏰ 11:25 - 12:25 ➔ ZEN\n⏰ 12:25 - 13:25 ➔ BAGGIO",
+
+    # --- Settimana dal 19 al 23 Ottobre ---
+    "2026-10-19": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 13:25 ➔ VIGO\n⏰ 13:25 - 14:25 ➔ MARTINAGGIA",
+    "2026-10-20": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ PETTENUZZO\n⏰ 12:25 - 14:25 ➔ LEVORATO",
+    "2026-10-21": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 14:25 ➔ BELLO'",
+    "2026-10-22": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ LEVORATO\n⏰ 12:25 - 13:25 ➔ ANDREATTA",
+
+    # --- Settimana dal 26 al 30 Ottobre ---
+    "2026-10-26": "⏰ 08:15 - 10:15 ➔ ANDREATTA\n⏰ 10:15 - 11:15 ➔ BASSETTO\n⏰ 11:25 - 12:25 ➔ ZEN\n⏰ 12:25 - 14:25 ➔ PETTENUZZO",
+    "2026-10-27": "⏰ 08:15 - 10:15 ➔ MUNICELLA\n⏰ 10:15 - 12:25 ➔ PETTENUZZO\n⏰ 12:25 - 14:25 ➔ LEVORATO",
+    "2026-10-28": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 14:25 ➔ BELLO'",
+    "2026-10-29": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ LEVORATO\n⏰ 12:25 - 13:25 ➔ BASSETTO",
+    "2026-10-30": "⏰ 08:15 - 09:15 ➔ MARTINAGGIA\n⏰ 09:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ ZEN\n⏰ 12:25 - 13:25 ➔ LEVORATO",
+
+    # --- Settimana dal 2 al 6 Novembre ---
+    "2026-11-02": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ PETTENUZZO\n⏰ 12:25 - 13:25 ➔ ANDREATTA\n⏰ 13:25 - 14:25 ➔ MARTINAGGIA",
+    "2026-11-03": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 12:25 ➔ TOSIN\n⏰ 12:25 - 14:25 ➔ LEVORATO",
+    "2026-11-04": "⏰ 08:15 - 09:15 ➔ LEVORATO\n⏰ 09:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 14:25 ➔ BELLO'",
+    "2026-11-05": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 12:25 ➔ LEVORATO\n⏰ 12:25 - 14:25 ➔ TOSIN",
+    "2026-11-06": "⏰ 08:15 - 09:15 ➔ MARTINAGGIA\n⏰ 09:15 - 10:15 ➔ ZEN\n⏰ 10:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ BASSETTO\n⏰ 12:25 - 13:25 ➔ LEVORATO",
+
+    # --- Settimana dal 9 al 13 Novembre ---
+    "2026-11-09": "⏰ 08:15 - 10:15 ➔ ANDREATTA\n⏰ 10:15 - 11:15 ➔ ZEN\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 14:25 ➔ PETTENUZZO",
+    "2026-11-10": "⏰ 08:15 - 10:15 ➔ MUNICELLA\n⏰ 10:15 - 11:15 ➔ TOSIN\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 14:25 ➔ LEVORATO",
+    "2026-11-11": "⏰ 08:15 - 09:15 ➔ TOSIN\n⏰ 09:15 - 10:15 ➔ BASSETTO\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 14:25 ➔ BELLO'",
+    "2026-11-12": "⏰ 08:15 - 09:15 ➔ ANDREATTA\n⏰ 09:15 - 10:15 ➔ BASSETTO\n⏰ 10:15 - 12:25 ➔ LEVORATO\n⏰ 12:25 - 13:25 ➔ ANDREATTA",
+    "2026-11-13": "⏰ 08:15 - 09:15 ➔ MARTINAGGIA\n⏰ 09:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ ZEN\n⏰ 12:25 - 13:25 ➔ BAGGIO",
+
+    # --- Settimana dal 16 al 20 Novembre ---
+    "2026-11-16": "⏰ 08:15 - 09:15 ➔ ZEN\n⏰ 09:15 - 10:15 ➔ ANDREATTA\n⏰ 10:15 - 11:15 ➔ PETTENUZZO\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 13:25 ➔ ANDREATTA",
+    "2026-11-17": "⏰ 08:15 - 10:15 ➔ LEVORATO\n⏰ 10:15 - 11:15 ➔ TOSIN\n⏰ 11:25 - 12:25 ➔ ANDREATTA\n⏰ 12:25 - 13:25 ➔ ANDREATTA",
+    "2026-11-18": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 14:25 ➔ BELLO'",
+    "2026-11-19": "⏰ 08:15 - 09:15 ➔ ZEN\n⏰ 09:15 - 11:15 ➔ BAGGIO\n⏰ 11:25 - 14:25 ➔ LEVORATO",
+    "2026-11-20": "⏰ 09:15 - 10:15 ➔ ANDREATTA\n⏰ 10:15 - 11:15 ➔ LEVORATO\n⏰ 11:25 - 13:25 ➔ TOSIN",
+
+    # --- Settimana dal 23 al 27 Novembre ---
+    "2026-11-23": "⏰ 08:15 - 10:15 ➔ PETTENUZZO\n⏰ 10:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 13:25 ➔ ZEN",
+
+    # --- Dicembre ---
+    "2026-12-13": "⏰ 08:15 - 10:15 ➔ TOSIN\n⏰ 10:15 - 11:15 ➔ ANDREATTA\n⏰ 11:25 - 12:25 ➔ VIGO\n⏰ 12:25 - 14:25 ➔ PETTENUZZO"
 }
 
 NOMI_GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+
+def genera_messaggio_orario(titolo: str, data_dt: datetime) -> str:
+    key_data = data_dt.strftime("%Y-%m-%d")
+    data_visiva = data_dt.strftime("%d/%m/%Y")
+    nome_giorno = NOMI_GIORNI[data_dt.weekday()].capitalize()
+
+    # Controlla se è sabato o domenica
+    if data_dt.weekday() >= 5:
+        return f"✨ *{titolo}*\n📅 *{nome_giorno} {data_visiva}*\n───────────────────\n\n🎉 Nessuna lezione (Fine settimana)\n\n───────────────────"
+
+    testo_orario = CALENDARIO_SCOLASTICO.get(key_data, "❌ Nessun orario trovato per questa data nel calendario.")
+
+    risposta = (
+        f"✨ *{titolo}*\n"
+        f"📅 *{nome_giorno} {data_visiva}*\n"
+        f"───────────────────\n\n"
+        f"{testo_orario}\n\n"
+        f"───────────────────"
+    )
+
+    if "LEVORATO" in testo_orario.upper() or "BAGGIO" in testo_orario.upper():
+        risposta += "\n\n⚠️ *Meglio che stai a casa*"
+
+    return risposta
 
 def calcola_giorno(testo_utente: str) -> tuple[int, datetime]:
     ora_italiana = datetime.now(TZ_ITALIA)
@@ -81,13 +139,13 @@ def trova_prossima_lezione(professore: str) -> str:
     ora_italiana = datetime.now(TZ_ITALIA)
     professore = professore.upper()
 
-    for offset in range(14):
+    for offset in range(60):  # Scansiona i prossimi 60 giorni nel calendario
         giorno_corrente = ora_italiana + timedelta(days=offset)
-        idx_giorno = giorno_corrente.weekday()
-        orario_testo = orario_settimanale.get(idx_giorno, "")
+        key_data = giorno_corrente.strftime("%Y-%m-%d")
+        orario_testo = CALENDARIO_SCOLASTICO.get(key_data, "")
 
         if professore in orario_testo.upper():
-            nome_g = NOMI_GIORNI[idx_giorno].capitalize()
+            nome_g = NOMI_GIORNI[giorno_corrente.weekday()].capitalize()
             data_str = giorno_corrente.strftime("%d/%m/%Y")
 
             if offset == 0:
@@ -99,36 +157,30 @@ def trova_prossima_lezione(professore: str) -> str:
             elif offset < 7:
                 quando = f"questo {nome_g}"
             else:
-                quando = f"{nome_g} della settimana prossima"
+                quando = f"{nome_g} {data_str}"
 
-            return f"Avrai {professore.capitalize()} *{quando}* ({nome_g} {data_str})."
+            return f"👨‍🏫 Avrai *{professore.capitalize()}* *{quando}* ({data_str})."
 
-    return f"Nessuna lezione con {professore.capitalize()} nei prossimi giorni."
+    return f"❌ Nessuna lezione con *{professore.capitalize()}* trovata nel calendario nei prossimi giorni."
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Ciao! Chiedimi l'orario dicendo ad esempio 'oggi', 'domani', 'martedì' o 'venerdì'.\n\n"
-        "Comandi disponibili:\n"
+        "👋 *Ciao! Benvenuto nel bot Orario Scolastico*\n\n"
+        "Chiedimi l'orario scrivendo ad esempio:\n"
+        "• `oggi`, `domani`, `dopodomani`\n"
+        "• `lunedì`, `martedì`, `mercoledì`, `giovedì`, `venerdì`\n\n"
+        "📌 *Comandi veloci:*\n"
         "/siam - Orario di domani\n"
-        "/levorato - Prossima lezione di Levorato\n"
-        "/baggio - Prossima lezione di Baggio"
+        "/levorato - Prossima lezione con Levorato\n"
+        "/baggio - Prossima lezione con Baggio",
+        parse_mode="Markdown"
     )
 
 async def siam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ora_italiana = datetime.now(TZ_ITALIA)
     domani = ora_italiana + timedelta(days=1)
-    giorno_idx = domani.weekday()
-    
-    nome_giorno = NOMI_GIORNI[giorno_idx]
-    data_str = domani.strftime("%d/%m/%Y")
-    orario = orario_settimanale.get(giorno_idx, "Nessuna lezione.")
-
-    risposta = f"Hey guys questo e orario di domani ({nome_giorno} {data_str}):\n\n{orario}"
-    
-    if "LEVORATO" in orario.upper() or "BAGGIO" in orario.upper():
-        risposta += "\n\nMeglio che stai a casa"
-
-    await update.message.reply_text(risposta)
+    risposta = genera_messaggio_orario("Hey guys questo è l'orario di domani", domani)
+    await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def levorato(update: Update, context: ContextTypes.DEFAULT_TYPE):
     risposta = trova_prossima_lezione("LEVORATO")
@@ -142,18 +194,10 @@ async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
     giorno_index, data_calcolata = calcola_giorno(update.message.text)
 
     if giorno_index is not None:
-        data_str = data_calcolata.strftime("%d/%m/%Y")
-        nome_giorno = NOMI_GIORNI[giorno_index]
-        testo_orario = orario_settimanale.get(giorno_index, "Orario non disponibile.")
-
-        risposta = f"Hey guys questo e orario di {nome_giorno} {data_str}:\n\n{testo_orario}"
-
-        if "LEVORATO" in testo_orario.upper() or "BAGGIO" in testo_orario.upper():
-            risposta += "\n\nMeglio che stai a casa"
-
-        await update.message.reply_text(risposta)
+        risposta = genera_messaggio_orario("Hey guys questo è l'orario richiesto", data_calcolata)
+        await update.message.reply_text(risposta, parse_mode="Markdown")
     else:
-        await update.message.reply_text("Non ho capito la data. Scrivi ad esempio 'oggi', 'domani', 'martedì' o 'venerdì'.")
+        await update.message.reply_text("❓ Non ho capito. Scrivi ad esempio 'oggi', 'domani', 'martedì' o 'venerdì'.")
 
 if __name__ == '__main__':
     if not TOKEN:
