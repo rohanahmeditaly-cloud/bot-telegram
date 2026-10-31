@@ -3,12 +3,10 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from datetime import datetime, timedelta
 
-# Variabili d'ambiente configurate su Render
+# Variabile d'ambiente su Render
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL")
-PORT = int(os.environ.get("PORT", 10000))
 
-# Orario basato sul tuo PDF (aggiungi le altre date seguendo il formato YYYY-MM-DD)
+# Orario basato sul tuo PDF (puoi aggiungere altre date seguendo il formato YYYY-MM-DD)
 orario_scolastico = {
     "2026-09-28": (
         "Lunedì 28 settembre 2026 - 4 ICT\n"
@@ -56,13 +54,12 @@ async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Non ho capito la data. Usa 'oggi', 'domani', 'dopodomani' o 'lunedì prossimo'.")
 
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), rispondi_orario))
-    
-    # Configurazione Webhook per Render
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=f"{RENDER_URL}/{TOKEN}"
-    )
+    if not TOKEN:
+        print("ERRORE: TELEGRAM_TOKEN non trovato nelle variabili d'ambiente!")
+    else:
+        app = ApplicationBuilder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), rispondi_orario))
+        
+        print("Bot avviato in modalità Polling...")
+        app.run_polling()
