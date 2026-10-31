@@ -199,10 +199,28 @@ async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❓ Non ho capito. Scrivi ad esempio 'oggi', 'domani', 'martedì' o 'venerdì'.")
 
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Piccolo server HTTP per soddisfare il controllo porte di Render
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+def run_dummy_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server.serve_forever()
+
 if __name__ == '__main__':
     if not TOKEN:
         print("ERRORE: TELEGRAM_TOKEN non trovato!")
     else:
+        # Avvia il server web finto in un thread separato
+        threading.Thread(target=run_dummy_server, daemon=True).start()
+        
         app = ApplicationBuilder().token(TOKEN).build()
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("siam", siam))
