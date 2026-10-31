@@ -1,17 +1,14 @@
 import os
-import re
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
-# Fuso orario italiano
-TZ_ITALIA = ZoneInfo("Europe/Rome")
+# Fuso orario italiano gestito tramite UTC+1 (standard) / UTC+2 (ora legale)
+TZ_ITALIA = timezone(timedelta(hours=1))
 
 # Orario scolastico per giorno della settimana (0 = Lunedì, 1 = Martedì, ..., 6 = Domenica)
-# Rimosse le sigle delle materie/aule tra parentesi
 orario_settimanale = {
     0: (
         "08:15 - 09:15: ANDREATTA\n"
@@ -47,7 +44,6 @@ def calcola_giorno(testo_utente: str) -> tuple[int, datetime]:
     ora_italiana = datetime.now(TZ_ITALIA)
     testo = testo_utente.lower().strip()
 
-    # Riconoscimento "oggi", "domani", "dopodomani"
     if "oggi" in testo:
         target_date = ora_italiana
     elif "domani" in testo and "dopo" not in testo:
@@ -55,9 +51,7 @@ def calcola_giorno(testo_utente: str) -> tuple[int, datetime]:
     elif "dopodomani" in testo or "dopo domani" in testo:
         target_date = ora_italiana + timedelta(days=2)
     else:
-        # Riconoscimento giorni della settimana
         giorno_trovato = None
-        
         mancanti_map = {
             "lunedi": 0, "lunedì": 0,
             "martedi": 1, "martedì": 1,
@@ -87,7 +81,7 @@ def trova_prossima_lezione(professore: str) -> str:
     ora_italiana = datetime.now(TZ_ITALIA)
     professore = professore.upper()
 
-    for offset in range(14):  # Controlla i prossimi 14 giorni
+    for offset in range(14):
         giorno_corrente = ora_italiana + timedelta(days=offset)
         idx_giorno = giorno_corrente.weekday()
         orario_testo = orario_settimanale.get(idx_giorno, "")
@@ -107,14 +101,14 @@ def trova_prossima_lezione(professore: str) -> str:
             else:
                 quando = f"{nome_g} della settimana prossima"
 
-            return f"Avrai {professore.capitalize()} **{quando}** ({nome_g} {data_str})."
+            return f"Avrai {professore.capitalize()} *{quando}* ({nome_g} {data_str})."
 
-    return f"Nessuna lezione con {professore.capitalize()} programmata nei prossimi giorni."
+    return f"Nessuna lezione con {professore.capitalize()} nei prossimi giorni."
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Ciao! Chiedimi l'orario dicendo ad esempio 'oggi', 'domani', 'martedì' o 'venerdì'.\n\n"
-        "Comandi speciali disponibili:\n"
+        "Comandi disponibili:\n"
         "/siam - Orario di domani\n"
         "/levorato - Prossima lezione di Levorato\n"
         "/baggio - Prossima lezione di Baggio"
@@ -154,7 +148,6 @@ async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         risposta = f"Hey guys questo e orario di {nome_giorno} {data_str}:\n\n{testo_orario}"
 
-        # Se tra le lezioni c'è Levorato o Baggio, aggiunge la frase finale
         if "LEVORATO" in testo_orario.upper() or "BAGGIO" in testo_orario.upper():
             risposta += "\n\nMeglio che stai a casa"
 
@@ -173,5 +166,5 @@ if __name__ == '__main__':
         app.add_handler(CommandHandler("baggio", baggio))
         app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), rispondi_orario))
 
-        print("Bot avviato in modalità Polling...")
+        print("Bot avviato...")
         app.run_polling()
