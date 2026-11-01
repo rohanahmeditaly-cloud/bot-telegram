@@ -164,6 +164,9 @@ def trova_prossima_lezione(professore: str) -> str:
     return f"❌ Nessuna lezione con *{professore.capitalize()}* trovata nel calendario nei prossimi giorni."
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    print(f"[UTENTE] /start da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+
     await update.message.reply_text(
         "👋 *Ciao! Benvenuto nel bot Orario Scolastico*\n\n"
         "Chiedimi l'orario scrivendo ad esempio:\n"
@@ -177,20 +180,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def siam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    print(f"[UTENTE] /siam da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+
     ora_italiana = datetime.now(TZ_ITALIA)
     domani = ora_italiana + timedelta(days=1)
     risposta = genera_messaggio_orario("Hey guys questo è l'orario di domani", domani)
     await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def levorato(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    print(f"[UTENTE] /levorato da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+
     risposta = trova_prossima_lezione("LEVORATO")
     await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def baggio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    print(f"[UTENTE] /baggio da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+
     risposta = trova_prossima_lezione("BAGGIO")
     await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    print(f"[UTENTE] Messaggio '{update.message.text}' da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+
     giorno_index, data_calcolata = calcola_giorno(update.message.text)
 
     if giorno_index is not None:
