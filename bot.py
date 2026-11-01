@@ -165,7 +165,7 @@ def trova_prossima_lezione(professore: str) -> str:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print(f"[UTENTE] /start da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+    print(f"[UTENTE] /start da: {user.first_name} | Username: @{user.username} | ID: {user.id}", flush=True)
 
     await update.message.reply_text(
         "👋 *Ciao! Benvenuto nel bot Orario Scolastico*\n\n"
@@ -181,7 +181,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def siam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print(f"[UTENTE] /siam da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+    print(f"[UTENTE] /siam da: {user.first_name} | Username: @{user.username} | ID: {user.id}", flush=True)
 
     ora_italiana = datetime.now(TZ_ITALIA)
     domani = ora_italiana + timedelta(days=1)
@@ -190,21 +190,21 @@ async def siam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def levorato(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print(f"[UTENTE] /levorato da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+    print(f"[UTENTE] /levorato da: {user.first_name} | Username: @{user.username} | ID: {user.id}", flush=True)
 
     risposta = trova_prossima_lezione("LEVORATO")
     await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def baggio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print(f"[UTENTE] /baggio da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+    print(f"[UTENTE] /baggio da: {user.first_name} | Username: @{user.username} | ID: {user.id}", flush=True)
 
     risposta = trova_prossima_lezione("BAGGIO")
     await update.message.reply_text(risposta, parse_mode="Markdown")
 
 async def rispondi_orario(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print(f"[UTENTE] Messaggio '{update.message.text}' da: {user.first_name} | Username: @{user.username} | ID: {user.id}")
+    print(f"[UTENTE] Messaggio '{update.message.text}' da: {user.first_name} | Username: @{user.username} | ID: {user.id}", flush=True)
 
     giorno_index, data_calcolata = calcola_giorno(update.message.text)
 
@@ -231,7 +231,7 @@ def run_dummy_server():
 
 if __name__ == '__main__':
     if not TOKEN:
-        print("ERRORE: TELEGRAM_TOKEN non trovato!")
+        print("ERRORE: TELEGRAM_TOKEN non trovato!", flush=True)
     else:
         # Avvia il server web finto in un thread separato
         threading.Thread(target=run_dummy_server, daemon=True).start()
@@ -243,5 +243,5 @@ if __name__ == '__main__':
         app.add_handler(CommandHandler("baggio", baggio))
         app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), rispondi_orario))
 
-        print("Bot avviato...")
+        print("Bot avviato...", flush=True)
         app.run_polling()
